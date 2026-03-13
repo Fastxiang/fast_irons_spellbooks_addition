@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_17",
+  "package": "com.main.fast_irons_spellbooks_addition.mixin",
+  "client": [
+  ],
+  "mixins": [
+    "AbstractSpellMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "fast_irons_spellbooks_addition.mixin-refmap.json"
+}
