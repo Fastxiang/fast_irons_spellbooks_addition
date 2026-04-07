@@ -2,15 +2,18 @@ package com.main.fast_irons_spellbooks_addition.spells.physical;
 
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
 import com.main.fast_irons_spellbooks_addition.entity.spells.magic.TripleMagicMissileProjectile;
+import com.main.fast_irons_spellbooks_addition.util.FastSoundUtil;
 import io.redspace.ironsspellbooks.api.config.DefaultConfig;
 import io.redspace.ironsspellbooks.api.magic.MagicData;
 import io.redspace.ironsspellbooks.api.spells.*;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
 import io.redspace.ironsspellbooks.capabilities.magic.RecastInstance;
+import io.redspace.ironsspellbooks.registries.SoundRegistry;
 import net.minecraft.resources.ResourceLocation;
 import com.main.fast_irons_spellbooks_addition.util.FastAttributeUtil;
 import com.main.fast_irons_spellbooks_addition.registry.FastSchoolRegistry;
 import com.main.fast_irons_spellbooks_addition.event.BasicAttackPreEvent;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraftforge.common.MinecraftForge;
 import io.redspace.ironsspellbooks.player.ClientMagicData;
 import net.minecraft.network.chat.Component;
@@ -24,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -128,6 +132,19 @@ public class TripleMagicMissileSpell extends AbstractSpell {
         default -> SpellAnimations.ANIMATION_CONTINUOUS_CAST_ONE_HANDED;
     };
     }
+
+    @Override
+    public Optional<SoundEvent> getCastFinishSound() {
+        var mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return Optional.empty();
+        }
+
+        UUID uuid = mc.player.getUUID();
+        int index = HeroResonanceSpell.elementIndexMap.getOrDefault(uuid, 0);
+        TripleMagicMissileProjectile.ElementType current = HeroResonanceSpell.ELEMENTS[index];
+        return FastSoundUtil.getElementTypeSound(current);
+    }
     
     @Override
     public List<MutableComponent> getUniqueInfo(int spellLevel, LivingEntity caster) {
@@ -205,11 +222,15 @@ public class TripleMagicMissileSpell extends AbstractSpell {
         damageMultiplier = AttackPreEvent.getDamageMultiplier();
         
         double finalDamage = baseDamage * damageMultiplier;
-
+        TripleMagicMissileProjectile.ElementType element = TripleMagicMissileProjectile.ElementType.FIRE;
         TripleMagicMissileProjectile magicMissileProjectile = new TripleMagicMissileProjectile(world, caster);
-        if (AttackPreEvent.getElementType() != null) {
-        magicMissileProjectile.setElementProperties(AttackPreEvent.getElementType());
+        if (caster.getPersistentData().contains("hero_element")) {
+            element = TripleMagicMissileProjectile.ElementType.valueOf(caster.getPersistentData().getString("hero_element"));
         }
+        if (AttackPreEvent.getElementType() != null) {
+            element = AttackPreEvent.getElementType();
+        }
+        magicMissileProjectile.setElementProperties(element);
         magicMissileProjectile.setPos(caster.position().add(0, caster.getEyeHeight() - magicMissileProjectile.getBoundingBox().getYsize() * .5f, 0));
         magicMissileProjectile.shoot(caster.getLookAngle());
         magicMissileProjectile.setCombo(combo);

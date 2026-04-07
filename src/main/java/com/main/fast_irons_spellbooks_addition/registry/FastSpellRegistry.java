@@ -99,6 +99,9 @@ public class FastSpellRegistry {
     public static final RegistryObject<AbstractSpell> CRUSHING_STANCE =
             registerSpell(new CrushingStanceSpell());
 
+    public static final RegistryObject<AbstractSpell> HERO_RESONANCE =
+            registerSpell(new HeroResonanceSpell());
+
     private static RegistryObject<AbstractSpell> registerIfLoaded(String modid, AbstractSpell spell) {
         if (ModList.get().isLoaded(modid)) {
             return registerSpell(spell);

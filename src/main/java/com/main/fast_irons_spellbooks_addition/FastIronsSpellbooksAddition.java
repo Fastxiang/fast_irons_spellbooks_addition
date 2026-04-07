@@ -25,7 +25,7 @@ public class FastIronsSpellbooksAddition {
         FastSchoolRegistry.register(bus);
         FastSpellRegistry.register(bus);
         FastEffectRegistry.register(bus);
-
+        FastSoundRegistry.register(bus);
         FastAttributeRegistry.register(bus);
         
         MinecraftForge.EVENT_BUS.register(this);

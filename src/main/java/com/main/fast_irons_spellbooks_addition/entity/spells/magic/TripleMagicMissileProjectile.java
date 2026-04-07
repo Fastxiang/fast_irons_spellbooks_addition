@@ -181,7 +181,7 @@ public class TripleMagicMissileProjectile extends AbstractMagicProjectile {
             case 3 -> ParticleHelper.WISP;
             case 4 -> ParticleTypes.SMOKE;
             case 5 -> ParticleHelper.ACID;
-            case 6 -> ParticleHelper.ICY_FOG;
+            case 6 -> ParticleHelper.SNOWFLAKE;
             case 7 -> ParticleHelper.UNSTABLE_ENDER;
             default -> ParticleHelper.FIRE_EMITTER;
         };
