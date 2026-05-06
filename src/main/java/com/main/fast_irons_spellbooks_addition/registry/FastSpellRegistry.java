@@ -102,6 +102,12 @@ public class FastSpellRegistry {
     public static final RegistryObject<AbstractSpell> HERO_RESONANCE =
             registerSpell(new HeroResonanceSpell());
 
+    public static final RegistryObject<AbstractSpell> EXPLOSION =
+            registerSpell(new ExplosionSpell());
+
+    public static final RegistryObject<AbstractSpell> MIRROR_SHOOTER =
+            registerSpell(new MirrorShooterSpell());
+
     private static RegistryObject<AbstractSpell> registerIfLoaded(String modid, AbstractSpell spell) {
         if (ModList.get().isLoaded(modid)) {
             return registerSpell(spell);

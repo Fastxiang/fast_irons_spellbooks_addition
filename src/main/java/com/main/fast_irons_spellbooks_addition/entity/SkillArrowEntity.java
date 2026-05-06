@@ -1,5 +1,6 @@
 package com.main.fast_irons_spellbooks_addition.entity;
 
+import com.main.fast_irons_spellbooks_addition.registry.FastEntityRegistry;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -19,8 +20,8 @@ public class SkillArrowEntity extends Arrow {
     }
 
     public SkillArrowEntity(Level level, LivingEntity shooter) {
-        super(level, shooter);
-        this.pickup = Pickup.DISALLOWED;
+        this(FastEntityRegistry.SKILL_ARROW.get(), level);
+        this.setOwner(shooter);
     }
 
     @Override
