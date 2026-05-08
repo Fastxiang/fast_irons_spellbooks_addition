@@ -33,12 +33,12 @@ public class ArrowRainSpell extends AbstractSpell {
             .setMinRarity(SpellRarity.COMMON)
             .setSchoolResource(FastSchoolRegistry.PHYSICAL_ID)
             .setMaxLevel(1)
-            .setCooldownSeconds(15)
+            .setCooldownSeconds(20)
             .setAllowCrafting(false)
             .build();
 
     public ArrowRainSpell() {
-        this.baseManaCost = 1500;
+        this.baseManaCost = 150;
         this.manaCostPerLevel = 0;
         this.castTime = 0;
         this.baseSpellPower = 1;

@@ -22,6 +22,7 @@ public class SkillArrowEntity extends Arrow {
     public SkillArrowEntity(Level level, LivingEntity shooter) {
         this(FastEntityRegistry.SKILL_ARROW.get(), level);
         this.setOwner(shooter);
+        this.setPos(shooter.getX(), shooter.getEyeY() - 0.1, shooter.getZ());
     }
 
     @Override

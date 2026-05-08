@@ -44,15 +44,19 @@ public class MirrorShooterEntity extends Mob {
     private static final EntityDataAccessor<Float> ATTACK_ANIM =
             SynchedEntityData.defineId(MirrorShooterEntity.class, EntityDataSerializers.FLOAT);
 
+    private int ownerCheckCooldown = 0;
     private int attackAnimTimer = 0;
-
     private int attackCooldown = 0;
     private int bowChargeTicks = 0;
     private boolean bowCharging = false;
-    private float damage = 1.0f; // 新增字段，用于近战及弓箭伤害
+    private float damage = 1.0f; // 近战及弓箭伤害
 
     @Nullable
     private UUID ownerUUID;
+
+    // 优先攻击目标（服务端即可，无需同步）
+    @Nullable
+    private LivingEntity priorityTarget = null;
 
     public MirrorShooterEntity(EntityType<? extends Mob> type, Level level) {
         super(type, level);
@@ -129,18 +133,15 @@ public class MirrorShooterEntity extends Mob {
         return list;
     }
 
-    @Nullable
     public static MirrorShooterEntity tryCreateForOwner(Level level, @Nullable LivingEntity owner, float damage, int max) {
         if (!level.isClientSide && owner != null) {
             List<MirrorShooterEntity> existing = getActiveForOwner(owner.getUUID(), level);
             while (existing.size() >= max) {
-                // 逐个移除直到数量小于 max
                 MirrorShooterEntity toRemove = existing.remove(0);
                 toRemove.discard();
             }
         }
-        MirrorShooterEntity newEntity = new MirrorShooterEntity(level, owner, damage);
-        return newEntity;
+        return new MirrorShooterEntity(level, owner, damage);
     }
 
     // ---------- Skin ----------
@@ -159,7 +160,7 @@ public class MirrorShooterEntity extends Mob {
             }
         }
         String s = this.entityData.get(SKIN_TEXTURE);
-        if (s != null && !s.isEmpty()) {
+        if (!s.isEmpty()) {
             return new ResourceLocation(s);
         }
         return new ResourceLocation("textures/entity/steve.png");
@@ -201,7 +202,7 @@ public class MirrorShooterEntity extends Mob {
     }
 
     public void triggerAttackAnimation() {
-        this.attackAnimTimer = 5;   // 动画持续 5 tick，可自行调整
+        this.attackAnimTimer = 5;
         this.entityData.set(ATTACK_ANIM, 1.0F);
     }
 
@@ -237,26 +238,30 @@ public class MirrorShooterEntity extends Mob {
         DamageSource source;
         if (owner != null) {
             if (owner instanceof Player player) {
-            source = this.damageSources().playerAttack(player);
+                source = this.damageSources().playerAttack(player);
             } else {
-            source = this.damageSources().mobAttack(owner);
+                source = this.damageSources().mobAttack(owner);
             }
         } else {
             source = this.damageSources().mobAttack(this);
         }
 
-        // 创建并发布事件
         MirrorShooterAttackEvent event = new MirrorShooterAttackEvent(this, target, source, damageAmount);
         if (!MinecraftForge.EVENT_BUS.post(event)) {
             target.hurt(event.getDamageSource(), event.getDamage());
         }
     }
 
-    // ---------- AI Goal：每 0.5 秒锁定最近怪物 ----------
+    // ---------- 设置优先攻击目标 ----------
+    public void setPriorityTarget(@Nullable LivingEntity target) {
+        this.priorityTarget = target;
+    }
+
+    // ---------- AI Goal：优先攻击主人目标，否则每 0.5 秒锁定最近怪物 ----------
     private class ShooterAttackGoal extends Goal {
         private final double followRange = 16.0;
         private final int meleeAttackRange = 3;
-        private final int bowAttackRange = 8;
+        private final int bowAttackRange = 10; // 加强至 10 格
         private int scanCooldown = 0;
 
         public ShooterAttackGoal() {
@@ -291,28 +296,78 @@ public class MirrorShooterEntity extends Mob {
 
         @Override
         public void tick() {
-            if (scanCooldown <= 0) {
-                LivingEntity currentTarget = MirrorShooterEntity.this.getTarget();
-                LivingEntity nearest = findNearestMonster();
-
-                if (nearest != currentTarget) {
-                    if (bowCharging && MirrorShooterEntity.this.isUsingItem()) {
-                        MirrorShooterEntity.this.stopUsingItem();
-                        bowCharging = false;
-                        bowChargeTicks = 0;
-                    }
-                    MirrorShooterEntity.this.setTarget(nearest);
-                    currentTarget = nearest;
-                }
-                scanCooldown = 10;
-            }
-            scanCooldown--;
-
             LivingEntity currentTarget = MirrorShooterEntity.this.getTarget();
+            LivingEntity nextTarget = null;
+
+            // 1. 根据主人攻击/受伤更新优先目标
+            // 1. 每 0.5 秒检测主人攻击/受伤目标（优先攻击）
+            if (ownerCheckCooldown <= 0) {
+                LivingEntity owner = MirrorShooterEntity.this.getOwner();
+                if (owner != null) {
+                    LivingEntity hurtBy = owner.getLastHurtByMob();
+                    LivingEntity hurtMob = owner.getLastHurtMob();
+                    LivingEntity candidate = null;
+                    if (hurtBy != null && hurtBy.isAlive() && hurtBy != owner && hurtBy != MirrorShooterEntity.this) {
+                        candidate = hurtBy;
+                    } else if (hurtMob != null && hurtMob.isAlive() && hurtMob != owner && hurtMob != MirrorShooterEntity.this) {
+                        candidate = hurtMob;
+                    }
+                    if (candidate != null) {
+                        MirrorShooterEntity.this.priorityTarget = candidate;
+                    }
+                }
+                ownerCheckCooldown = 10;
+            }
+            ownerCheckCooldown--;
+
+            // 2. 处理优先目标
+            if (MirrorShooterEntity.this.priorityTarget != null) {
+                LivingEntity pt = MirrorShooterEntity.this.priorityTarget;
+                if (!pt.isAlive()) {
+                    MirrorShooterEntity.this.priorityTarget = null;
+                } else {
+                    ItemStack held = MirrorShooterEntity.this.getMainHandItem();
+                    int range = (held.getItem() instanceof BowItem) ? bowAttackRange : meleeAttackRange;
+                    double distSq = MirrorShooterEntity.this.distanceToSqr(pt);
+                    if (distSq <= range * range && MirrorShooterEntity.this.hasLineOfSight(pt)) {
+                        nextTarget = pt;
+                    } else {
+                        // 超出攻击范围，放弃优先，回退到扫描逻辑
+                        MirrorShooterEntity.this.priorityTarget = null;
+                    }
+                }
+            }
+
+            // 3. 无优先目标时，常规扫描怪物
+            if (nextTarget == null) {
+                if (scanCooldown <= 0) {
+                    nextTarget = findNearestMonster();
+                    scanCooldown = 10;
+                } else {
+                    nextTarget = currentTarget;
+                }
+                scanCooldown--;
+            } else {
+                // 有优先目标时也维持冷却递减，以便切回时尽快扫描
+                scanCooldown--;
+            }
+
+            // 4. 目标切换处理（停止拉弓等）
+            if (nextTarget != currentTarget) {
+                if (bowCharging && MirrorShooterEntity.this.isUsingItem()) {
+                    MirrorShooterEntity.this.stopUsingItem();
+                    bowCharging = false;
+                    bowChargeTicks = 0;
+                }
+                MirrorShooterEntity.this.setTarget(nextTarget);
+                currentTarget = nextTarget;
+            }
+
             if (currentTarget == null) {
                 return;
             }
 
+            // 5. 攻击执行
             ItemStack heldItem = MirrorShooterEntity.this.getMainHandItem();
             MirrorShooterEntity.this.getLookControl().setLookAt(currentTarget, 30.0f, 30.0f);
 
@@ -391,7 +446,6 @@ public class MirrorShooterEntity extends Mob {
                 arrow = bowItem.customArrow(arrow);
             }
 
-            // 使用 damage 字段设定箭矢基础伤害
             arrow.setBaseDamage(MirrorShooterEntity.this.getDamage());
 
             double dx = target.getX() - MirrorShooterEntity.this.getX();
@@ -416,6 +470,7 @@ public class MirrorShooterEntity extends Mob {
         if (this.ownerUUID != null) {
             tag.putUUID("Owner", this.ownerUUID);
         }
+        tag.putFloat("Damage", this.damage);
     }
 
     @Override
@@ -430,6 +485,9 @@ public class MirrorShooterEntity extends Mob {
         if (tag.hasUUID("Owner")) {
             this.ownerUUID = tag.getUUID("Owner");
             this.entityData.set(OWNER_UUID, Optional.of(this.ownerUUID));
+        }
+        if (tag.contains("Damage")) {
+            this.damage = tag.getFloat("Damage");
         }
     }
 }

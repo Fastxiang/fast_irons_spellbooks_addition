@@ -21,7 +21,6 @@ public class FastIronsSpellbooksAddition {
         IEventBus bus = context.getModEventBus();
         
         FastEntityRegistry.register(bus);
-        
         FastSchoolRegistry.register(bus);
         FastSpellRegistry.register(bus);
         FastEffectRegistry.register(bus);
