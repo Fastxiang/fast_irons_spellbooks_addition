@@ -33,6 +33,10 @@ public class SkillArrowEntity extends Arrow {
     @Override
     protected void onHitEntity(@NotNull EntityHitResult hitResult) {
         Entity target = hitResult.getEntity();
+        if (target == this.getOwner()) {
+            this.discard();
+            return;
+        }
         if (target instanceof LivingEntity living) {
             living.invulnerableTime = 0;
             super.onHitEntity(hitResult);

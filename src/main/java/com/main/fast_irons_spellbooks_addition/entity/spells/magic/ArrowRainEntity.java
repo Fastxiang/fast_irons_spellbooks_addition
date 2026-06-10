@@ -12,6 +12,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
@@ -45,7 +46,15 @@ public class ArrowRainEntity extends AbstractMagicProjectile {
                     double spawnZ = this.getZ() + offsetZ;
                     double spawnY = this.getY() + 12 + random.nextDouble() * 3; // 上方12~15格
 
-                    SkillArrowEntity arrow = new SkillArrowEntity(level, (LivingEntity) this.getOwner());
+                    Entity owner = this.getOwner();
+                    LivingEntity shooter = (owner instanceof LivingEntity living) ? living : null;
+
+                    if (shooter == null) {
+                        this.discard();
+                        return;
+                    }
+
+                    SkillArrowEntity arrow = new SkillArrowEntity(level, shooter);
                     arrow.setBaseDamage(this.getDamage());
                     arrow.setPos(spawnX, spawnY, spawnZ);
                     Vec3 motion = new Vec3(0, -1.5, 0);
