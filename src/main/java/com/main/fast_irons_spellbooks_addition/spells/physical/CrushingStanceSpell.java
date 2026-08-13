@@ -40,7 +40,7 @@ public class CrushingStanceSpell extends AbstractSpell {
             .build();
 
     public CrushingStanceSpell() {
-        this.baseManaCost = 0;
+        this.baseManaCost = 10;
         this.manaCostPerLevel = 0;
         this.castTime = 610;
         this.baseSpellPower = 1;
@@ -116,7 +116,7 @@ public class CrushingStanceSpell extends AbstractSpell {
     ) {
         var Event = new FastSpellOnCastEvent(caster, spellLevel, getSpellId(), this);
         if (!MinecraftForge.EVENT_BUS.post(Event)) {
-            double radius = 2.0D;
+            double radius = 4.0D;
 
             List<LivingEntity> targets = world.getEntitiesOfClass(
                     LivingEntity.class,
@@ -127,12 +127,10 @@ public class CrushingStanceSpell extends AbstractSpell {
             float damage = getDamage(spellLevel, caster);
 
             for (LivingEntity target : targets) {
-                target.invulnerableTime = 0;
                 target.hurt(
                         getDamageSource(spellLevel, caster),
                         damage
                 );
-                target.invulnerableTime = 20;
             }
         }
         super.onCast(world, spellLevel, caster, castSource, magicData);

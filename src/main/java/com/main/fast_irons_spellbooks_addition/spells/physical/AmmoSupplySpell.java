@@ -92,18 +92,7 @@ public class AmmoSupplySpell extends AbstractSpell {
     ) {
 
         var Event = new FastSpellOnCastEvent(caster, spellLevel, getSpellId(), this);
-        if (!MinecraftForge.EVENT_BUS.post(Event)) {
-            ItemStack stack = caster.getMainHandItem();
-            CompoundTag tag = stack.getTag();
-            if (tag != null) {
-                if (tag.contains("GunCurrentAmmoCount")) {
-                    int ammo = tag.getInt("GunCurrentAmmoCount");
-                    ammo += getAmmo(spellLevel, caster);
-                    tag.putInt("GunCurrentAmmoCount", ammo);
-                    stack.setTag(tag);
-                }
-            }
-        }
+        MinecraftForge.EVENT_BUS.post(Event);
 
         super.onCast(world, spellLevel, caster, castSource, magicData);
       }

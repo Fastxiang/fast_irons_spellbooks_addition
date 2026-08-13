@@ -28,7 +28,7 @@ public class PerfectGuardSpell extends AbstractSpell {
             .setMinRarity(SpellRarity.COMMON)
             .setSchoolResource(FastSchoolRegistry.PHYSICAL_ID)
             .setMaxLevel(1)
-            .setCooldownSeconds(5)
+            .setCooldownSeconds(3)
             .setAllowCrafting(false)
             .build();
 
