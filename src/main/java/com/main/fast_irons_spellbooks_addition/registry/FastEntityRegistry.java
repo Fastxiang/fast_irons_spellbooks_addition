@@ -3,7 +3,9 @@ package com.main.fast_irons_spellbooks_addition.registry;
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
 import com.main.fast_irons_spellbooks_addition.entity.MirrorShooterEntity;
 import com.main.fast_irons_spellbooks_addition.entity.SkillArrowEntity;
+import com.main.fast_irons_spellbooks_addition.entity.spells.fireball.MagicFireballTracking;
 import com.main.fast_irons_spellbooks_addition.entity.spells.magic.ArrowRainEntity;
+import com.main.fast_irons_spellbooks_addition.entity.spells.magic.BloodRainEntity;
 import com.main.fast_irons_spellbooks_addition.entity.spells.magic.ExplosionProjectile;
 import com.main.fast_irons_spellbooks_addition.entity.spells.magic.SmallExplosionProjectile;
 import com.main.fast_irons_spellbooks_addition.entity.spells.magic.TripleMagicMissileProjectile;
@@ -45,6 +47,32 @@ public class FastEntityRegistry {
                     .clientTrackingRange(64)
                     .updateInterval(10)
                     .build("arrow_rain")
+    );
+
+    public static final RegistryObject<EntityType<BloodRainEntity>>
+            BLOOD_RAIN = ENTITY_TYPES.register(
+            "blood_rain",
+            () -> EntityType.Builder.<BloodRainEntity>of(
+                            BloodRainEntity::new,
+                            MobCategory.MISC
+                    )
+                    .sized(1f, 1f)
+                    .clientTrackingRange(64)
+                    .updateInterval(10)
+                    .build("blood_rain")
+    );
+
+    public static final RegistryObject<EntityType<MagicFireballTracking>>
+            MAGIC_FIREBALL_TRACKING = ENTITY_TYPES.register(
+            "magic_fireball_tracking",
+            () -> EntityType.Builder.<MagicFireballTracking>of(
+                            MagicFireballTracking::new,
+                            MobCategory.MISC
+                    )
+                    .sized(1f, 1f)
+                    .clientTrackingRange(64)
+                    .updateInterval(10)
+                    .build("magic_fireball_tracking")
     );
 
     public static final RegistryObject<EntityType<SmallExplosionProjectile>> SMALL_EXPLOSION_PROJECTILE =

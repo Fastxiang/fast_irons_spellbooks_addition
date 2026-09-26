@@ -21,6 +21,15 @@ public class PhysicalSpellAnimations {
     public static final AnimationHolder ATTACK_4 =
             new AnimationHolder(id("attack4"), true);
 
+    public static final AnimationHolder SIX_STRIKE_1 =
+            new AnimationHolder(id("six_strike_1"), true);
+
+    public static final AnimationHolder SIX_STRIKE_2 =
+            new AnimationHolder(id("six_strike_2"), true);
+
+    public static final AnimationHolder SIX_STRIKE_3 =
+            new AnimationHolder(id("six_strike_3"), true);
+
     public static final AnimationHolder COUNTER_STANCE =
             new AnimationHolder(id("counter_stance"), true);
 

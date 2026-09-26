@@ -1,6 +1,7 @@
 {
     "school.fast_irons_spellbooks_addition.physical": "物理",
     "spell.fast_irons_spellbooks_addition.triple_strike": "物理三连击",
+    "spell.fast_irons_spellbooks_addition.six_strike": "物理六连击",
     "spell.fast_irons_spellbooks_addition.triple_magic_missile": "法术三连击",
     "spell.fast_irons_spellbooks_addition.war_cry": "战吼",
     "spell.fast_irons_spellbooks_addition.phantom_step": "迷踪步",
@@ -29,5 +30,14 @@
     "attribute.fast_irons_spellbooks_addition.basic_magic_damage": "魔法普攻伤害",
     "entity.fast_irons_spellbooks_addition.skill_arrow": "箭",
     "entity.fast_irons_spellbooks_addition.mirror_shooter": "分身射手",
-    "effect.fast_irons_spellbooks_addition.war_cry": "战吼"
+    "effect.fast_irons_spellbooks_addition.war_cry": "战吼",
+    "spell.fast_irons_spellbooks_addition.volt_strike_refresh": "伏特打击-刷新",
+    "effect.fast_irons_spellbooks_addition.volt_strike_refresh": "伏特打击-刷新",
+    "spell.fast_irons_spellbooks_addition.ray_of_frost_concerto": "冰霜射线-协奏",
+    "spell.fast_irons_spellbooks_addition.blood_rain": "猩红刺狱-血雨",
+    "entity.fast_irons_spellbooks_addition.blood_rain": "血雨",
+    "spell.fast_irons_spellbooks_addition.blessing_of_life_compassion": "生命祝福-慈悲",
+    "spell.fast_irons_spellbooks_addition.magic_arrow_swift": "魔法箭-迅捷",
+    "spell.fast_irons_spellbooks_addition.magic_fireball_tracking": "巨型火球-追踪",
+    "entity.fast_irons_spellbooks_addition.magic_fireball_tracking": "追踪巨型火球"
 }

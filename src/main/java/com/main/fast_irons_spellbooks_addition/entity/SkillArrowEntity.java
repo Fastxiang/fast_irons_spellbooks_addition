@@ -14,6 +14,8 @@ public class SkillArrowEntity extends Arrow {
 
     private int life = 0;
 
+    private int tickLife = 0;
+
     public SkillArrowEntity(EntityType<? extends Arrow> type, Level level) {
         super(type, level);
         this.pickup = Pickup.DISALLOWED;
@@ -22,7 +24,22 @@ public class SkillArrowEntity extends Arrow {
     public SkillArrowEntity(Level level, LivingEntity shooter) {
         this(FastEntityRegistry.SKILL_ARROW.get(), level);
         this.setOwner(shooter);
-        this.setPos(shooter.getX(), shooter.getEyeY() - 0.1, shooter.getZ());
+        this.setPos(
+                shooter.getX(),
+                shooter.getEyeY() - 0.1,
+                shooter.getZ()
+        );
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+
+        ++this.tickLife;
+
+        if (this.tickLife >= 400) {
+            this.discard();
+        }
     }
 
     @Override
@@ -33,13 +50,17 @@ public class SkillArrowEntity extends Arrow {
     @Override
     protected void onHitEntity(@NotNull EntityHitResult hitResult) {
         Entity target = hitResult.getEntity();
+
         if (target == this.getOwner()) {
             this.discard();
             return;
         }
+
         if (target instanceof LivingEntity living) {
             living.invulnerableTime = 0;
+
             super.onHitEntity(hitResult);
+
             living.invulnerableTime = 20;
         } else {
             super.onHitEntity(hitResult);

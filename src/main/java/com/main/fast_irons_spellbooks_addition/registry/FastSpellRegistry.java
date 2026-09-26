@@ -1,6 +1,12 @@
 package com.main.fast_irons_spellbooks_addition.registry;
 
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
+import com.main.fast_irons_spellbooks_addition.spells.blood.BloodRainSpell;
+import com.main.fast_irons_spellbooks_addition.spells.ender.MagicArrowSwiftSpell;
+import com.main.fast_irons_spellbooks_addition.spells.fire.MagicFireballTrackingSpell;
+import com.main.fast_irons_spellbooks_addition.spells.holy.BlessingOfLifeCompassionSpell;
+import com.main.fast_irons_spellbooks_addition.spells.ice.RayOfFrostConcertoSpell;
+import com.main.fast_irons_spellbooks_addition.spells.lightning.VoltStrikeRefreshSpell;
 import com.main.fast_irons_spellbooks_addition.spells.physical.*;
 import io.redspace.ironsspellbooks.api.registry.SpellRegistry;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
@@ -47,6 +53,9 @@ public class FastSpellRegistry {
     
     public static final RegistryObject<AbstractSpell> TRIPLE_STRIKE =
             registerSpell(new TripleStrikeSpell());
+
+    public static final RegistryObject<AbstractSpell> SIX_STRIKE =
+            registerSpell(new SixStrikeSpell());
 
     public static final RegistryObject<AbstractSpell> TRIPLE_MAGIC_MISSILE =
             registerSpell(new TripleMagicMissileSpell());
@@ -107,6 +116,24 @@ public class FastSpellRegistry {
 
     public static final RegistryObject<AbstractSpell> MIRROR_SHOOTER =
             registerSpell(new MirrorShooterSpell());
+
+    public static final RegistryObject<AbstractSpell> VOLT_STRIKE_REFRESH =
+            registerSpell(new VoltStrikeRefreshSpell());
+
+    public static final RegistryObject<AbstractSpell> RAY_OF_FROST_CONCERTO =
+            registerSpell(new RayOfFrostConcertoSpell());
+
+    public static final RegistryObject<AbstractSpell> BLOOD_RAIN =
+            registerSpell(new BloodRainSpell());
+
+    public static final RegistryObject<AbstractSpell> BLESSING_OF_LIFE_COMPASSION =
+            registerSpell(new BlessingOfLifeCompassionSpell());
+
+    public static final RegistryObject<AbstractSpell> MAGIC_ARROW_SWIFT =
+            registerSpell(new MagicArrowSwiftSpell());
+
+    public static final RegistryObject<AbstractSpell> MAGIC_FIREBALL_TRACKING =
+            registerSpell(new MagicFireballTrackingSpell());
 
     private static RegistryObject<AbstractSpell> registerIfLoaded(String modid, AbstractSpell spell) {
         if (ModList.get().isLoaded(modid)) {

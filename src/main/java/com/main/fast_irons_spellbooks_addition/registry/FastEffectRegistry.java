@@ -2,8 +2,10 @@ package com.main.fast_irons_spellbooks_addition.registry;
 
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
 import com.main.fast_irons_spellbooks_addition.effect.ArmorPenetrationEffect;
+import com.main.fast_irons_spellbooks_addition.effect.VoltStrikeRefreshEffect;
 import com.main.fast_irons_spellbooks_addition.effect.WarCryEffect;
 import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -18,6 +20,9 @@ public class FastEffectRegistry {
 
     public static final RegistryObject<MobEffect> ARMOR_PENETRATION =
             EFFECTS.register("armor_penetration", ArmorPenetrationEffect::new);
+
+    public static final RegistryObject<MobEffect> VOLT_STRIKE_REFRESH =
+            EFFECTS.register("volt_strike_refresh", () -> new VoltStrikeRefreshEffect(MobEffectCategory.BENEFICIAL, 218138879));
 
     public static void register(IEventBus bus) {
         EFFECTS.register(bus);
