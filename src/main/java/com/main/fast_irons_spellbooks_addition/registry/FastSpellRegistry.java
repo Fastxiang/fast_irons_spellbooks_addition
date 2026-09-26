@@ -135,6 +135,9 @@ public class FastSpellRegistry {
     public static final RegistryObject<AbstractSpell> MAGIC_FIREBALL_TRACKING =
             registerSpell(new MagicFireballTrackingSpell());
 
+    public static final RegistryObject<AbstractSpell> MAGIC_BEAM =
+            registerSpell(new MagicBeamSpell());
+
     private static RegistryObject<AbstractSpell> registerIfLoaded(String modid, AbstractSpell spell) {
         if (ModList.get().isLoaded(modid)) {
             return registerSpell(spell);

@@ -123,7 +123,8 @@ public class TripleMagicMissileProjectile extends AbstractMagicProjectile {
             case BLOOD -> {
                 red = 180; green = 20; blue = 20;
                 this.damageSource = SpellRegistry.BLOOD_SLASH_SPELL.get()
-                        .getDamageSource(this, getOwner());
+                        .getDamageSource(this, getOwner())
+                        .setLifestealPercent(0f); // 取消猩红伤害自带的吸血
             }
             case HOLY -> {
                 red = 242; green = 247; blue = 92;
