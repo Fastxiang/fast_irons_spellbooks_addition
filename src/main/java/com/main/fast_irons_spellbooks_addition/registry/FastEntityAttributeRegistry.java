@@ -2,6 +2,7 @@ package com.main.fast_irons_spellbooks_addition.registry;
 
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
 import com.main.fast_irons_spellbooks_addition.entity.MirrorShooterEntity;
+import com.main.fast_irons_spellbooks_addition.entity.summon.PhantomCantor;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -13,6 +14,8 @@ public class FastEntityAttributeRegistry{
     public static void onAttributeCreate(EntityAttributeCreationEvent event) {
         event.put(FastEntityRegistry.MIRROR_SHOOTER.get(),
                 MirrorShooterEntity.createAttributes().build());
+        event.put(FastEntityRegistry.PHANTOM_CANTOR.get(),
+                PhantomCantor.createAttributes().build());
     }
 
 }

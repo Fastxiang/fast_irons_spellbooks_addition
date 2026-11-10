@@ -1,5 +1,6 @@
 package com.main.fast_irons_spellbooks_addition.spells.physical;
 
+import com.main.fast_irons_spellbooks_addition.api.ComboSpell;
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
 import com.main.fast_irons_spellbooks_addition.event.BasicAttackHitEvent;
 import com.main.fast_irons_spellbooks_addition.event.BasicAttackMissEvent;
@@ -35,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static net.minecraftforge.common.ForgeMod.ENTITY_REACH;
 
-public class SixStrikeSpell extends AbstractSpell {
+public class SixStrikeSpell extends AbstractSpell implements ComboSpell {
 
     private static final ResourceLocation spellId =
             FastIronsSpellbooksAddition.id("six_strike");
@@ -57,6 +58,17 @@ public class SixStrikeSpell extends AbstractSpell {
     }
 
     private final Map<UUID, Integer> comboMap = new ConcurrentHashMap<>();
+
+    /**
+     * 非玩家施法者（女仆 / 怪物）不会走 {@code onCast} 里「玩家开段清零」那条分支，
+     * 段号会一直往上漂，重击倍率就落到错误的段上。由外部战斗 AI 在起手前调用。
+     */
+    @Override
+    public void resetCombo(LivingEntity caster) {
+        if (caster != null) {
+            comboMap.put(caster.getUUID(), 0);
+        }
+    }
 
     @Override
     public ResourceLocation getSpellResource() {
@@ -223,15 +235,7 @@ public class SixStrikeSpell extends AbstractSpell {
 
             DamageSource ds = getDamageSource(spellLevel, caster);
 
-            double range = 3;
-
-            var attr = caster.getAttribute(ENTITY_REACH.get());
-            if (attr != null) {
-                double value = attr.getValue();
-                if (value > 0) {
-                    range = value;
-                }
-            }
+            double range = FastAttributeUtil.getAttackRange(caster);
             double halfAngle = Math.toRadians(60);
 
             Vec3 lookVec = caster.getLookAngle();

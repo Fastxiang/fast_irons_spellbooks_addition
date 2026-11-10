@@ -10,6 +10,7 @@ import io.redspace.ironsspellbooks.api.config.DefaultConfig;
 import io.redspace.ironsspellbooks.api.magic.MagicData;
 import io.redspace.ironsspellbooks.api.spells.*;
 import io.redspace.ironsspellbooks.api.util.AnimationHolder;
+import io.redspace.ironsspellbooks.api.util.RaycastBuilder;
 import io.redspace.ironsspellbooks.api.util.Utils;
 import io.redspace.ironsspellbooks.capabilities.magic.TargetEntityCastData;
 import net.minecraft.network.chat.Component;
@@ -117,7 +118,7 @@ public class ArrowRainSpell extends AbstractSpell {
                 targetLocation = castTargetingData.getTargetPosition((ServerLevel) world);
             }
             if (targetLocation == null) {
-                targetLocation = Utils.raycastForEntity(world, caster, 100, true).getLocation();
+                targetLocation = RaycastBuilder.begin(world, caster).range(100).checkForBlocks(true).build().getLocation();
             }
 
                 ArrowRainEntity rain = new ArrowRainEntity(FastEntityRegistry.ARROW_RAIN.get(), world);

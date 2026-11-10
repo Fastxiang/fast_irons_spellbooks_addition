@@ -3,8 +3,10 @@ package com.main.fast_irons_spellbooks_addition.client;
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
 import com.main.fast_irons_spellbooks_addition.entity.spells.magic.TripleMagicMissileProjectile;
 import com.main.fast_irons_spellbooks_addition.registry.FastSpellRegistry;
+import com.main.fast_irons_spellbooks_addition.spells.physical.HeroResonanceSpell;
 import com.main.fast_irons_spellbooks_addition.spells.physical.MagicBeamSpell;
 import io.redspace.ironsspellbooks.api.entity.IMagicEntity;
+import io.redspace.ironsspellbooks.api.util.RaycastBuilder;
 import io.redspace.ironsspellbooks.api.util.Utils;
 import io.redspace.ironsspellbooks.player.ClientMagicData;
 import io.redspace.ironsspellbooks.util.ParticleHelper;
@@ -47,9 +49,9 @@ public class FastClientRenderEvents {
                 spellcasters.forEach((entity) -> {
                     var spellData = ClientMagicData.getSyncedSpellData((LivingEntity) entity);
                     if (spellData.isCasting() && spellData.getCastingSpellId().equals(FastSpellRegistry.MAGIC_BEAM.get().getSpellId())) {
-                        Vec3 impact = Utils.raycastForEntity(entity.level(), entity, MagicBeamSpell.getRange(0), true).getLocation().subtract(0, .25, 0);
+                        Vec3 impact = RaycastBuilder.begin(entity.level(), entity).range(MagicBeamSpell.getRange(0)).checkForBlocks(true).build().getLocation().subtract(0, .25, 0);
                         // 勇者调律：命中点粒子随元素改变
-                        ParticleOptions particle = getElementParticle(FastSpellRenderingHelper.getCastingElement((LivingEntity) entity));
+                        ParticleOptions particle = getElementParticle(HeroResonanceSpell.getCurrentElement((LivingEntity) entity));
                         for (int i = 0; i < 8; i++) {
                             Vec3 motion = new Vec3(
                                     Utils.getRandomScaled(.2f),

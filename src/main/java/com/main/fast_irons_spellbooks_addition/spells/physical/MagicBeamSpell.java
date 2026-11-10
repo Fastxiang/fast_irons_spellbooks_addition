@@ -2,12 +2,16 @@ package com.main.fast_irons_spellbooks_addition.spells.physical;
 
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
 import com.main.fast_irons_spellbooks_addition.entity.spells.magic.TripleMagicMissileProjectile;
+import com.main.fast_irons_spellbooks_addition.event.BasicAttackHitEvent;
+import com.main.fast_irons_spellbooks_addition.event.BasicAttackMissEvent;
+import com.main.fast_irons_spellbooks_addition.event.BasicAttackPreEvent;
 import com.main.fast_irons_spellbooks_addition.registry.FastSchoolRegistry;
 import com.main.fast_irons_spellbooks_addition.util.FastAttributeUtil;
 import io.redspace.ironsspellbooks.api.config.DefaultConfig;
 import io.redspace.ironsspellbooks.api.magic.MagicData;
 import io.redspace.ironsspellbooks.api.registry.SpellRegistry;
 import io.redspace.ironsspellbooks.api.spells.*;
+import io.redspace.ironsspellbooks.api.util.RaycastBuilder;
 import io.redspace.ironsspellbooks.api.util.Utils;
 import io.redspace.ironsspellbooks.damage.DamageSources;
 import io.redspace.ironsspellbooks.damage.SpellDamageSource;
@@ -22,6 +26,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.MinecraftForge;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -35,6 +40,9 @@ import java.util.List;
 public class MagicBeamSpell extends AbstractSpell {
     private static final ResourceLocation spellId =
             FastIronsSpellbooksAddition.id("magic_beam");
+
+    /** 起手蓄力时长（0.5 秒），期间不造成任何伤害与普攻事件 */
+    private static final int STARTUP_TICKS = 10;
 
     private final DefaultConfig defaultConfig = new DefaultConfig()
             .setMinRarity(SpellRarity.COMMON)
@@ -90,29 +98,73 @@ public class MagicBeamSpell extends AbstractSpell {
 
     @Override
     public void onCast(Level level, int spellLevel, LivingEntity entity, CastSource castSource, MagicData playerMagicData) {
+        // 起手 0.5 秒内不造成伤害，避免连点器反复起手刷伤害；
+        // 之后的间隔由原版 CONTINUOUS_CAST_TICK_INTERVAL（10 tick = 0.5 秒）固定保证
+        int castDuration = playerMagicData.getCastDuration();
+        if (castDuration > 0 && castDuration - playerMagicData.getCastDurationRemaining() < STARTUP_TICKS) {
+            super.onCast(level, spellLevel, entity, castSource, playerMagicData);
+            return;
+        }
+
         Vec3 forward = entity.getForward();
         if (playerMagicData.getAdditionalCastData() instanceof CastingMobAimingData aimData && entity instanceof Mob mob) {
             forward = aimData.getForward(entity);
         }
-        var hitResult = Utils.raycastForEntity(level, entity, entity.getEyePosition(), entity.getEyePosition().add(forward.scale(getRange(spellLevel))), true, .15f, Utils::canHitWithRaycast);
-        if (hitResult.getType() == HitResult.Type.ENTITY) {
-            Entity target = ((EntityHitResult) hitResult).getEntity();
-            if (target.canBeHitByProjectile()) {
-                DamageSources.applyDamage(target, getTickDamage(spellLevel, entity), getElementDamageSource(getCastingElement(entity), entity));
+
+        TripleMagicMissileProjectile.ElementType element = HeroResonanceSpell.getCurrentElement(entity);
+
+        // 与 TripleMagicMissileSpell 一致：施法前发布普攻前置事件（可被取消或改写伤害/元素）
+        BasicAttackPreEvent attackPreEvent = new BasicAttackPreEvent(
+                entity,
+                1,
+                getTickDamage(spellLevel, entity),
+                1.0,
+                "magic"
+        );
+
+        if (!MinecraftForge.EVENT_BUS.post(attackPreEvent)) {
+            float damage = (float) (attackPreEvent.getDamage() * attackPreEvent.getDamageMultiplier());
+            if (attackPreEvent.getElementType() != null) {
+                element = attackPreEvent.getElementType();
+            }
+
+            var hitResult = RaycastBuilder.begin(level, entity)
+                    .start(entity.getEyePosition())
+                    .end(entity.getEyePosition().add(forward.scale(getRange(spellLevel))))
+                    .checkForBlocks(true)
+                    .bbInflation(.15f)
+                    .filter(Utils::canHitWithRaycast)
+                    .build();
+            boolean hit = false;
+
+            if (hitResult.getType() == HitResult.Type.ENTITY) {
+                Entity target = ((EntityHitResult) hitResult).getEntity();
+                if (target instanceof LivingEntity livingTarget && target.canBeHitByProjectile()) {
+                    hit = true;
+                    BasicAttackHitEvent attackHitEvent = new BasicAttackHitEvent(
+                            entity,
+                            List.of(livingTarget),
+                            damage,
+                            1,
+                            element,
+                            "magic",
+                            getElementDamageSource(element, entity)
+                    );
+                    MinecraftForge.EVENT_BUS.post(attackHitEvent);
+
+                    target.invulnerableTime = 0;
+                    DamageSources.applyDamage(target, attackHitEvent.getDamage(), attackHitEvent.getDamageSource());
+                    target.invulnerableTime = 20;
+                }
+            }
+
+            if (!hit) {
+                // 与 TripleMagicMissileProjectile.onHitBlock 一致：未命中实体时发布普攻未命中事件
+                MinecraftForge.EVENT_BUS.post(new BasicAttackMissEvent(entity, 1, element, "magic"));
             }
         }
-        super.onCast(level, spellLevel, entity, castSource, playerMagicData);
-    }
 
-    /**
-     * 勇者调律：读取施法者当前元素，默认 FIRE
-     */
-    private TripleMagicMissileProjectile.ElementType getCastingElement(LivingEntity entity) {
-        TripleMagicMissileProjectile.ElementType element = TripleMagicMissileProjectile.ElementType.FIRE;
-        if (entity.getPersistentData().contains("hero_element")) {
-            element = TripleMagicMissileProjectile.ElementType.valueOf(entity.getPersistentData().getString("hero_element"));
-        }
-        return element;
+        super.onCast(level, spellLevel, entity, castSource, playerMagicData);
     }
 
     /**

@@ -26,7 +26,7 @@ import java.util.Optional;
  * - 吟唱时间：0 秒（原为 1.5 秒）
  * - 冷却时间：0 秒（原为 5 秒）
  * - 法力消耗：400（原为 200，两倍）
- * - 无蓄力/释放音效
+ * - 瞬发无蓄力，故无起手音效；释放沿用原版 MAGIC_ARROW_RELEASE
  */
 public class MagicArrowSwiftSpell extends AbstractSpell {
     private static final ResourceLocation spellId =
@@ -69,7 +69,7 @@ public class MagicArrowSwiftSpell extends AbstractSpell {
 
     @Override
     public Optional<SoundEvent> getCastFinishSound() {
-        return Optional.empty();
+        return Optional.of(SoundRegistry.MAGIC_ARROW_RELEASE.get());
     }
 
     @Override

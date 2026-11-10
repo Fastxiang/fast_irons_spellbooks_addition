@@ -7,7 +7,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import io.redspace.ironsspellbooks.IronsSpellbooks;
-import io.redspace.ironsspellbooks.api.util.Utils;
+import io.redspace.ironsspellbooks.api.util.RaycastBuilder;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -29,14 +29,6 @@ import org.joml.Matrix4f;
 public class FastSpellRenderingHelper {
     public static final ResourceLocation BEACON = IronsSpellbooks.id("textures/entity/ray/beacon_beam.png");
     public static final ResourceLocation TWISTING_GLOW = IronsSpellbooks.id("textures/entity/ray/twisting_glow.png");
-
-    /**
-     * 读取施法者当前勇者调律元素
-     */
-    public static TripleMagicMissileProjectile.ElementType getCastingElement(LivingEntity entity) {
-        int index = HeroResonanceSpell.elementIndexMap.getOrDefault(entity.getUUID(), 0);
-        return HeroResonanceSpell.ELEMENTS[index];
-    }
 
     /**
      * 元素对应的属性颜色（与 TripleMagicMissileProjectile.setElementProperties 一致）
@@ -62,12 +54,12 @@ public class FastSpellRenderingHelper {
         Vec3 start = Vec3.ZERO;
         Vec3 end;
 
-        Vec3 impact = Utils.raycastForEntity(entity.level(), entity, MagicBeamSpell.getRange(0), true).getLocation();
+        Vec3 impact = RaycastBuilder.begin(entity.level(), entity).range(MagicBeamSpell.getRange(0)).checkForBlocks(true).build().getLocation();
         float distance = (float) entity.getEyePosition().distanceTo(impact);
         float radius = .12f;
 
         // 勇者调律：光束颜色随元素改变（保持与原版一致的亮度缩放）
-        int[] rgb = getElementColor(getCastingElement(entity));
+        int[] rgb = getElementColor(HeroResonanceSpell.getCurrentElement(entity));
         int r = (int) (rgb[0] * .7f);
         int g = (int) (rgb[1] * .7f);
         int b = (int) (rgb[2] * .7f);

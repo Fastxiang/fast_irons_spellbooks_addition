@@ -3,11 +3,13 @@ package com.main.fast_irons_spellbooks_addition.spells.ice;
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
 import com.main.fast_irons_spellbooks_addition.entity.spells.magic.TripleMagicMissileProjectile;
 import com.main.fast_irons_spellbooks_addition.event.FastSpellOnCastEvent;
+import com.main.fast_irons_spellbooks_addition.spells.physical.HeroResonanceSpell;
 import com.main.fast_irons_spellbooks_addition.util.FastAttributeUtil;
 import io.redspace.ironsspellbooks.api.config.DefaultConfig;
 import io.redspace.ironsspellbooks.api.magic.MagicData;
 import io.redspace.ironsspellbooks.api.registry.SchoolRegistry;
 import io.redspace.ironsspellbooks.api.spells.*;
+import io.redspace.ironsspellbooks.api.util.RaycastBuilder;
 import io.redspace.ironsspellbooks.api.util.Utils;
 import io.redspace.ironsspellbooks.capabilities.magic.MagicManager;
 import io.redspace.ironsspellbooks.damage.DamageSources;
@@ -87,7 +89,11 @@ public class RayOfFrostConcertoSpell extends AbstractSpell {
         var Event = new FastSpellOnCastEvent(entity, spellLevel, getSpellId(), this);
         MinecraftForge.EVENT_BUS.post(Event);
 
-        var hitResult = Utils.raycastForEntity(level, entity, getRange(spellLevel, entity), true, .15f);
+        var hitResult = RaycastBuilder.begin(level, entity)
+                .range(getRange(spellLevel, entity))
+                .checkForBlocks(true)
+                .bbInflation(.15f)
+                .build();
         level.addFreshEntity(new RayOfFrostVisualEntity(level, entity.getEyePosition(), hitResult.getLocation(), entity));
         if (hitResult.getType() == HitResult.Type.ENTITY) {
             Entity target = ((EntityHitResult) hitResult).getEntity();
@@ -108,7 +114,7 @@ public class RayOfFrostConcertoSpell extends AbstractSpell {
      * 不管命中几个敌人，一次施法命中时只生成 2 发（本方法只会在命中时调用一次）
      * 伤害：固定 100% 魔攻（getMagicAttack * getBasicMagicDamage）
      * 不使用 BasicAttackPreEvent（这不属于主动普攻）
-     * 应用勇者调律元素：优先读取 caster 的 persistentData "hero_element"
+     * 应用勇者调律元素：HeroResonanceSpell.getCurrentElement(caster)
      */
     private void spawnConcertoProjectiles(Level level, LivingEntity caster, Entity target) {
         if (level.isClientSide) {
@@ -119,12 +125,7 @@ public class RayOfFrostConcertoSpell extends AbstractSpell {
         Vec3 eyePos = caster.getEyePosition();
 
         // 读取勇者调律的元素选择
-        TripleMagicMissileProjectile.ElementType element = TripleMagicMissileProjectile.ElementType.FIRE;
-        if (caster.getPersistentData().contains("hero_element")) {
-                element = TripleMagicMissileProjectile.ElementType.valueOf(
-                        caster.getPersistentData().getString("hero_element")
-                );
-        }
+        TripleMagicMissileProjectile.ElementType element = HeroResonanceSpell.getCurrentElement(caster);
 
         // 固定生成 2 发投射物
         int count = 2;

@@ -116,15 +116,7 @@ public class CounterSpell extends AbstractSpell {
         var Event = new FastSpellOnCastEvent(caster, spellLevel, getSpellId(), this);
         if (!MinecraftForge.EVENT_BUS.post(Event)) {
             DamageSource ds = getDamageSource(spellLevel, caster);
-            double range = 3;
-
-            var attr = caster.getAttribute(ENTITY_REACH.get());
-            if (attr != null) {
-                double value = attr.getValue();
-                if (value > 0) {
-                    range = value;
-                }
-            }
+            double range = FastAttributeUtil.getAttackRange(caster);
             double halfAngle = Math.toRadians(60);
 
             Vec3 lookVec = caster.getLookAngle();

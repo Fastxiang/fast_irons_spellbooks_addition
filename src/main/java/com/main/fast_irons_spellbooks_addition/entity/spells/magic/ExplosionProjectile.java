@@ -6,9 +6,7 @@ import io.redspace.ironsspellbooks.api.util.Utils;
 import io.redspace.ironsspellbooks.config.ServerConfigs;
 import io.redspace.ironsspellbooks.damage.DamageSources;
 import io.redspace.ironsspellbooks.entity.spells.AbstractMagicProjectile;
-import io.redspace.ironsspellbooks.network.particles.FieryExplosionParticlesPacket;
 import io.redspace.ironsspellbooks.registries.EntityRegistry;
-import io.redspace.ironsspellbooks.setup.PacketDistributor;
 import io.redspace.ironsspellbooks.util.ParticleHelper;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -96,7 +94,9 @@ public class ExplosionProjectile extends AbstractMagicProjectile {
                     explosion.finalizeExplosion(false);
                 }
             }
-            PacketDistributor.sendToPlayersTrackingEntity(this, new FieryExplosionParticlesPacket(hitResult.getLocation().subtract(getDeltaMovement().scale(0.5)), getExplosionRadius()));
+            // 命中特效交给 ExplosionBurst（爆闪 → 星芒爆开 → 三圈冲击波 → 蘑菇云），不再用 ISS 的火焰爆炸粒子
+            Vec3 impact = hitResult.getLocation();
+            level.addFreshEntity(new ExplosionBurst(level, impact, getExplosionRadius()));
             playSound(SoundEvents.GENERIC_EXPLODE, 4.0F, (1.0F + (level.random.nextFloat() - level.random.nextFloat()) * 0.2F) * 0.7F);
             this.discardHelper(hitResult);
         }

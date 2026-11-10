@@ -88,12 +88,27 @@ repositories {
             includeGroup "curse.maven"
         }
     }
+    // 本地构建的上游前置源码产物（irons_spellbooks-1.20.1-3.16.3.jar）
+    flatDir {
+        dirs './前置的源码/irons-spells-n-spellbooks-not-1.20.1/build/libs'
+    }
+    maven { url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/" }
+    maven { url = "https://maven.theillusivec4.top" }
+    maven { url = "https://maven.kosmx.dev/" }
+    maven { url = "https://code.redspace.io/releases" }
+    maven { url = "https://code.redspace.io/snapshots" }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-    implementation fg.deobf("curse.maven:irons-spells-n-spellbooks-855414:7402504")
+    // 使用本地构建的 3.16.3 前置（含新 API RaycastBuilder / SpellType）
+    implementation fg.deobf("local:irons_spellbooks:1.20.1-3.16.3")
+    // 3.16.3 前置的传递依赖（本地 jar 无 POM，需显式声明）
+    implementation fg.deobf("software.bernie.geckolib:geckolib-forge-1.20.1:4.8.2")
+    implementation fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:1.0.2-rc1+1.20")
+    implementation fg.deobf("io.redspace:irons_lib:1.20.1-2.1.0")
+    implementation fg.deobf("top.theillusivec4.curios:curios-forge:5.14.1+1.20.1")
     implementation fg.deobf("curse.maven:timeless-and-classics-zero-1028108:7401617")
 }
 

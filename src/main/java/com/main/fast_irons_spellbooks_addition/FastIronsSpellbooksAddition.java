@@ -1,5 +1,6 @@
 package com.main.fast_irons_spellbooks_addition;
 
+import com.main.fast_irons_spellbooks_addition.network.FastNetwork;
 import com.main.fast_irons_spellbooks_addition.registry.*;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.common.MinecraftForge;
@@ -21,12 +22,14 @@ public class FastIronsSpellbooksAddition {
         IEventBus bus = context.getModEventBus();
         
         FastEntityRegistry.register(bus);
+        FastItemRegistry.register(bus);
         FastSchoolRegistry.register(bus);
         FastSpellRegistry.register(bus);
         FastEffectRegistry.register(bus);
         FastSoundRegistry.register(bus);
         FastAttributeRegistry.register(bus);
-        
+        FastNetwork.register();
+
         MinecraftForge.EVENT_BUS.register(this);
     }
     

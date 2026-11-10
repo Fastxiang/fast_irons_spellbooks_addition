@@ -3,12 +3,15 @@ package com.main.fast_irons_spellbooks_addition.spells.physical;
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
 import com.main.fast_irons_spellbooks_addition.entity.spells.magic.TripleMagicMissileProjectile;
 import com.main.fast_irons_spellbooks_addition.event.FastSpellOnCastEvent;
+import com.main.fast_irons_spellbooks_addition.network.FastNetwork;
+import com.main.fast_irons_spellbooks_addition.network.SyncHeroElementPacket;
 import com.main.fast_irons_spellbooks_addition.registry.FastSchoolRegistry;
 import com.main.fast_irons_spellbooks_addition.util.FastSoundUtil;
 import io.redspace.ironsspellbooks.api.config.DefaultConfig;
 import io.redspace.ironsspellbooks.api.magic.MagicData;
 import io.redspace.ironsspellbooks.api.spells.*;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
@@ -21,6 +24,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +54,35 @@ public class HeroResonanceSpell extends AbstractSpell {
 
     public static final TripleMagicMissileProjectile.ElementType[] ELEMENTS = TripleMagicMissileProjectile.ElementType.values();
 
+    /**
+     * 勇者调律元素的唯一解析入口：从持久化数据（服务端权威）读取，无记录时返回 null
+     */
+    @Nullable
+    public static TripleMagicMissileProjectile.ElementType getStoredElement(LivingEntity caster) {
+        return caster.getPersistentData().contains("hero_element")
+                ? TripleMagicMissileProjectile.ElementType.valueOf(caster.getPersistentData().getString("hero_element"))
+                : null;
+    }
+
+    /**
+     * 当前勇者调律元素：持久化数据 → 索引表（客户端回退）→ 默认首个元素（火焰）
+     */
+    public static TripleMagicMissileProjectile.ElementType getCurrentElement(@Nullable LivingEntity caster) {
+        if (caster == null) {
+            return ELEMENTS[0];
+        }
+        TripleMagicMissileProjectile.ElementType stored = getStoredElement(caster);
+        return stored != null ? stored : ELEMENTS[elementIndexMap.getOrDefault(caster.getUUID(), 0)];
+    }
+
+    /**
+     * 客户端播放：当前元素的施法音效
+     */
+    public static Optional<SoundEvent> getCurrentElementSound() {
+        Player player = Minecraft.getInstance().player;
+        return player == null ? Optional.empty() : FastSoundUtil.getElementTypeSound(getCurrentElement(player));
+    }
+
     @Override
     public ResourceLocation getSpellResource() {
         return spellId;
@@ -72,15 +105,7 @@ public class HeroResonanceSpell extends AbstractSpell {
 
     @Override
     public Optional<SoundEvent> getCastFinishSound() {
-        var mc = Minecraft.getInstance();
-        if (mc.player == null) {
-            return Optional.empty();
-        }
-
-        UUID uuid = mc.player.getUUID();
-        int index = elementIndexMap.getOrDefault(uuid, 0);
-        TripleMagicMissileProjectile.ElementType current = ELEMENTS[index];
-        return FastSoundUtil.getElementTypeSound(current);
+        return getCurrentElementSound();
     }
 
     @Override
@@ -95,8 +120,10 @@ public class HeroResonanceSpell extends AbstractSpell {
 
     @Override
     public List<MutableComponent> getUniqueInfo(int spellLevel, LivingEntity caster) {
+        TripleMagicMissileProjectile.ElementType element = getCurrentElement(caster);
         return List.of(
-
+                Component.translatable("ui.fast_irons_spellbooks_addition.current_element",
+                        Component.translatable("school.irons_spellbooks." + element.name().toLowerCase(Locale.ROOT)))
         );
     }
 
@@ -112,6 +139,7 @@ public class HeroResonanceSpell extends AbstractSpell {
         if (!MinecraftForge.EVENT_BUS.post(Event)) {
             UUID uuid = caster.getUUID();
 
+            // 未施法时为默认元素（火焰），一旦施法就切到下一个元素并开始循环
             int index = elementIndexMap.getOrDefault(uuid, 0);
 
             index = (index + 1) % ELEMENTS.length;
@@ -121,6 +149,11 @@ public class HeroResonanceSpell extends AbstractSpell {
             TripleMagicMissileProjectile.ElementType current = ELEMENTS[index];
 
             caster.getPersistentData().putString("hero_element", current.name());
+
+            // 同步给追踪该实体的客户端及其自身，修正多人游戏下客户端元素显示不同步
+            if (!world.isClientSide) {
+                FastNetwork.sendToPlayersTrackingEntityAndSelf(caster, new SyncHeroElementPacket(caster.getUUID(), index));
+            }
         }
         super.onCast(world, spellLevel, caster, castSource, magicData);
       }

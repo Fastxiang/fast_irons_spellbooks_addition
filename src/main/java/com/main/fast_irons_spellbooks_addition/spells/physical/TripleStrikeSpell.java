@@ -1,5 +1,6 @@
 package com.main.fast_irons_spellbooks_addition.spells.physical;
 
+import com.main.fast_irons_spellbooks_addition.api.ComboSpell;
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
 import com.main.fast_irons_spellbooks_addition.event.BasicAttackHitEvent;
 import com.main.fast_irons_spellbooks_addition.event.BasicAttackMissEvent;
@@ -35,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static net.minecraftforge.common.ForgeMod.ENTITY_REACH;
 
-public class TripleStrikeSpell extends AbstractSpell {
+public class TripleStrikeSpell extends AbstractSpell implements ComboSpell {
 
     private static final ResourceLocation spellId =
             FastIronsSpellbooksAddition.id("triple_strike");
@@ -57,6 +58,17 @@ public class TripleStrikeSpell extends AbstractSpell {
     }
     
     private final Map<UUID, Integer> comboMap = new ConcurrentHashMap<>();
+
+    /**
+     * 非玩家施法者（女仆 / 怪物）不会走 {@code onCast} 里「玩家开段清零」那条分支，
+     * 段号会一直往上漂，重击倍率就落到错误的段上。由外部战斗 AI 在起手前调用。
+     */
+    @Override
+    public void resetCombo(LivingEntity caster) {
+        if (caster != null) {
+            comboMap.put(caster.getUUID(), 0);
+        }
+    }
 
     @Override
     public ResourceLocation getSpellResource() {
@@ -224,34 +236,62 @@ public class TripleStrikeSpell extends AbstractSpell {
         
         DamageSource ds = getDamageSource(spellLevel, caster);
 
-        double range = 3;
-
-        var attr = caster.getAttribute(ENTITY_REACH.get());
-        if (attr != null) {
-            double value = attr.getValue();
-            if (value > 0) {
-                range = value;
-            }
-        }
+        double range = FastAttributeUtil.getAttackRange(caster);
     double halfAngle = Math.toRadians(60);
 
     Vec3 lookVec = caster.getLookAngle();
     Vec3 casterPos = caster.position().add(0, caster.getEyeHeight(), 0);
 
+    /*
+     * 判定区域 = 以施法者为中心、半径 range、半角 60 度的「水平扇形」。
+     *
+     * 之前这里只用 AABB 做筛选（caster.getBoundingBox().inflate(range) 是轴对齐方块），
+     * 算出来的 distance 只用于 distance < 0.5 的贴脸必中，距离根本没有限制 ——
+     * 结果真实范围是「轴对齐方块 ∩ 锥形」，方块对角能打到 range * 1.4 远，
+     * 完全不像一个近战扇形，也没法和技能范围提示对齐。
+     *
+     * 现在改成严格按水平扇形判定：
+     *   1. 水平距离 <= range
+     *   2. 水平夹角 <= 60 度
+     * 这样画出来的红圈提示就是判定区域本身，圈内必中、圈外必不中。
+     * AABB 只当作粗筛，避免遍历整个世界的实体。
+     */
+    double lookHorizontal = Math.sqrt(lookVec.x * lookVec.x + lookVec.z * lookVec.z);
+
+    double lookX = lookHorizontal > 1.0E-6D ? lookVec.x / lookHorizontal : lookVec.x;
+    double lookZ = lookHorizontal > 1.0E-6D ? lookVec.z / lookHorizontal : lookVec.z;
+
+    double cosHalfAngle = Math.cos(halfAngle);
+
     List<LivingEntity> hitTargets = new ArrayList<>();
 
     for (LivingEntity e : world.getEntitiesOfClass(
         LivingEntity.class,
-        caster.getBoundingBox().inflate(range),
+        caster.getBoundingBox().inflate(range + 1.0D),
         target -> target != caster
     )) {
     Vec3 targetPos = e.position().add(0, e.getEyeHeight() / 2, 0);
-    Vec3 dirToTarget = targetPos.subtract(casterPos).normalize();
-    
-    double distance = casterPos.distanceTo(targetPos);
-    double dot = lookVec.dot(dirToTarget);
-    
-    if (distance < 0.5 || dot >= Math.cos(halfAngle)) {
+
+    double dx = targetPos.x - casterPos.x;
+    double dz = targetPos.z - casterPos.z;
+
+    double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
+
+    // 1. 距离限制：这才是扇形判定的半径
+    if (horizontalDistance > range) {
+        continue;
+    }
+
+    // 贴脸必中
+    if (horizontalDistance < 0.5) {
+        hitTargets.add(e);
+        continue;
+    }
+
+    // 2. 角度限制：水平夹角 <= 60 度
+    double dot = lookX * (dx / horizontalDistance) + lookZ * (dz / horizontalDistance);
+
+    if (dot >= cosHalfAngle) {
         hitTargets.add(e);
     }
     }

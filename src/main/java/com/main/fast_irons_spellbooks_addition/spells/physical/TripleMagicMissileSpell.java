@@ -1,8 +1,8 @@
 package com.main.fast_irons_spellbooks_addition.spells.physical;
 
+import com.main.fast_irons_spellbooks_addition.api.ComboSpell;
 import com.main.fast_irons_spellbooks_addition.FastIronsSpellbooksAddition;
 import com.main.fast_irons_spellbooks_addition.entity.spells.magic.TripleMagicMissileProjectile;
-import com.main.fast_irons_spellbooks_addition.util.FastSoundUtil;
 import io.redspace.ironsspellbooks.api.config.DefaultConfig;
 import io.redspace.ironsspellbooks.api.magic.MagicData;
 import io.redspace.ironsspellbooks.api.spells.*;
@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TripleMagicMissileSpell extends AbstractSpell {
+public class TripleMagicMissileSpell extends AbstractSpell implements ComboSpell {
 
     private static final ResourceLocation spellId =
             FastIronsSpellbooksAddition.id("triple_magic_missile");
@@ -54,6 +54,17 @@ public class TripleMagicMissileSpell extends AbstractSpell {
 
     /** 连击计数 */
     private final Map<UUID, Integer> comboMap = new ConcurrentHashMap<>();
+
+    /**
+     * 非玩家施法者（女仆 / 怪物）不会走 {@code onCast} 里「玩家开段清零」那条分支，
+     * 段号会一直往上漂，重击倍率就落到错误的段上。由外部战斗 AI 在起手前调用。
+     */
+    @Override
+    public void resetCombo(LivingEntity caster) {
+        if (caster != null) {
+            comboMap.put(caster.getUUID(), 0);
+        }
+    }
 
     @Override
     public ResourceLocation getSpellResource() {
@@ -135,15 +146,7 @@ public class TripleMagicMissileSpell extends AbstractSpell {
 
     @Override
     public Optional<SoundEvent> getCastFinishSound() {
-        var mc = Minecraft.getInstance();
-        if (mc.player == null) {
-            return Optional.empty();
-        }
-
-        UUID uuid = mc.player.getUUID();
-        int index = HeroResonanceSpell.elementIndexMap.getOrDefault(uuid, 0);
-        TripleMagicMissileProjectile.ElementType current = HeroResonanceSpell.ELEMENTS[index];
-        return FastSoundUtil.getElementTypeSound(current);
+        return HeroResonanceSpell.getCurrentElementSound();
     }
     
     @Override
@@ -222,11 +225,8 @@ public class TripleMagicMissileSpell extends AbstractSpell {
         damageMultiplier = AttackPreEvent.getDamageMultiplier();
         
         double finalDamage = baseDamage * damageMultiplier;
-        TripleMagicMissileProjectile.ElementType element = TripleMagicMissileProjectile.ElementType.FIRE;
+        TripleMagicMissileProjectile.ElementType element = HeroResonanceSpell.getCurrentElement(caster);
         TripleMagicMissileProjectile magicMissileProjectile = new TripleMagicMissileProjectile(world, caster);
-        if (caster.getPersistentData().contains("hero_element")) {
-            element = TripleMagicMissileProjectile.ElementType.valueOf(caster.getPersistentData().getString("hero_element"));
-        }
         if (AttackPreEvent.getElementType() != null) {
             element = AttackPreEvent.getElementType();
         }
